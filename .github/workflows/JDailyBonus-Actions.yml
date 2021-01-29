@@ -1,0 +1,56 @@
+name: JDailyBonus-Actions
+
+on:
+  workflow_dispatch:
+  push:
+    branches: 
+      - master
+    paths:
+      - '.github/workflows/**'
+  schedule:
+    - cron: '0 0 * * *'
+
+jobs:
+  build:
+    runs-on: ubuntu-18.04
+    
+    steps:
+    - name: Clone Repository
+      uses: actions/checkout@v1
+
+    - name: Setup Node.js 12.x
+      uses: actions/setup-node@v2
+      with:
+        node-version: '12'
+        
+    - name: JD Bonus
+      env:
+        MyJDCookie01: ${{ secrets.JDCOOKIE01 }}
+        MyJDCookie02: ${{ secrets.JDCOOKIE02 }}
+        MyJDCookie03: ${{ secrets.JDCOOKIE03 }}
+        MyJDCookie04: ${{ secrets.JDCOOKIE04 }}
+      run: |
+        sudo -E npm install request
+        MyJDCookie01=$(echo ${MyJDCookie01} | sed 's/\//\\\//g')
+        MyJDCookie02=$(echo ${MyJDCookie02} | sed 's/\//\\\//g')
+        MyJDCookie03=$(echo ${MyJDCookie03} | sed 's/\//\\\//g')
+        MyJDCookie04=$(echo ${MyJDCookie04} | sed 's/\//\\\//g')
+        
+        wget https://raw.githubusercontent.com/NobyDa/Script/master/JD-DailyBonus/JD_DailyBonus.js
+        cp JD_DailyBonus.js JD_DailyBonus_2.js
+        
+        sed -i "s/var Key = '';/var Key = '${MyJDCookie01}';/" JD_DailyBonus.js
+        sed -i "s/var DualKey = '';/var DualKey = '${MyJDCookie02}';/" JD_DailyBonus.js
+        node JD_DailyBonus.js
+        
+        sed -i "s/var Key = '';/var Key = '${MyJDCookie03}';/" JD_DailyBonus_2.js
+        sed -i "s/var DualKey = '';/var DualKey = '${MyJDCookie04}';/" JD_DailyBonus_2.js
+        node JD_DailyBonus_2.js
+        
+    - name: Cleanup Workflow Runs
+      uses: Mattraks/delete-workflow-runs@main
+      with:
+        token: ${{ github.token }}
+        repository: ${{ github.repository }}
+        retain_days: 3
+        keep_minimum_runs: 3
